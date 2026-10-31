@@ -8,3 +8,6 @@ python-dotenv==1.2.4
 # Tests
 pytest==9.2.0
 pytest-asyncio==1.4.1
+
+# Config validation (render.yaml check)
+PyYAML==6.0.3

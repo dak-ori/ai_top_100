@@ -1,0 +1,22 @@
+# Render Blueprint: one always-on web service.
+# Sessions live in process memory, so exactly one worker and one instance must serve traffic.
+services:
+  - type: web
+    name: kakao-cs-agent
+    runtime: python
+    plan: starter # always on; the free plan sleeps and would break the 5-second Kakao limit
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn --factory app.main:build_app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: claude_api_key
+        sync: false # entered in the Render dashboard, never committed
+      - key: bot_auth_token
+        sync: false # entered in the Render dashboard, never committed
+      - key: CLAUDE_MODEL
+        value: claude-haiku-5-5
+      - key: TURN_BUDGET_SECONDS
+        value: "4.2"
