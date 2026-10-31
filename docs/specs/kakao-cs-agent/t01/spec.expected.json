@@ -1,0 +1,42 @@
+{
+  "verification_commands": [
+    {
+      "argv": ["python", "-m", "pip", "install", "-q", "-r", "requirements.txt"],
+      "timeout_sec": 600,
+      "contract_refs": ["R1"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_config.py"],
+      "timeout_sec": 120,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R3"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_kakao.py"],
+      "timeout_sec": 120,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R4"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_server.py"],
+      "timeout_sec": 120,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R5", "R6"]
+    },
+    {
+      "argv": ["python", "-c", "t=open('.gitignore',encoding='utf-8').read().splitlines(); need=['.env','.env.*','api_key.md','docs/competition/api.md','.venv/','__pycache__/','.pytest_cache/']; miss=[n for n in need if n not in t]; print('MISSING:'+','.join(miss) if miss else 'GITIGNORE_OK'); raise SystemExit(1 if miss else 0)"],
+      "stdout_contains": ["GITIGNORE_OK"],
+      "contract_refs": ["R2"]
+    }
+  ],
+  "forbidden_patterns": [
+    {"pattern": "aitop100_[A-Za-z0-9]{6,}", "description": "액션 토큰이 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "sk-ant-[A-Za-z0-9_-]{10,}", "description": "Anthropic 키가 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "type:\\s*ignore|@ts-ignore", "description": "타입 우회", "severity": "warning"}
+  ],
+  "required_files": ["requirements.txt", "app/config.py", "app/kakao.py", "app/server.py", "tests/test_config.py", "tests/test_kakao.py", "tests/test_server.py", ".gitignore"],
+  "forbidden_files": [".env", "api_key.md", "docs/competition/api.md"]
+}
