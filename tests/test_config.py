@@ -23,7 +23,9 @@ def test_defaults_when_only_secrets_are_set(no_dotenv: Path) -> None:
     assert settings.TURN_BUDGET_SECONDS == 4.2
     assert settings.SESSION_TTL_SECONDS == 3600
     assert settings.MAX_SESSION_TURNS == 40
-    settings.validate()
+    settings.validate(webhook=False)
+    with pytest.raises(ConfigError, match="kakao_bot_token"):
+        settings.validate()
 
 
 def test_overrides_are_parsed(no_dotenv: Path) -> None:

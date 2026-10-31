@@ -16,7 +16,8 @@ from app.main import build_app
 ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_KEY = "fake-claude-key-1234"
 ACTION_TOKEN = "fake-action-token-5678"
-KEY_VARIABLES = ("claude_api_key", "CLAUDE_API_KEY", "ANTHROPIC_API_KEY", "bot_auth_token", "BOT_AUTH_TOKEN")
+BOT_TOKEN = "fake-kakao-bot-token-9012"
+KEY_VARIABLES = ("claude_api_key", "CLAUDE_API_KEY", "ANTHROPIC_API_KEY", "bot_auth_token", "BOT_AUTH_TOKEN", "kakao_bot_token", "KAKAO_BOT_TOKEN")
 REPLY = "배송 문의 도와드릴게요. 주문번호를 알려 주세요."
 
 
@@ -35,7 +36,7 @@ class FakeClaude:
 
 
 def settings(**overrides):
-    return Settings(claude_api_key=CLAUDE_KEY, bot_auth_token=ACTION_TOKEN, **overrides)
+    return Settings(claude_api_key=CLAUDE_KEY, bot_auth_token=ACTION_TOKEN, kakao_bot_token=BOT_TOKEN, **overrides)
 
 
 def skill_body(user_id="u1", utterance="안녕하세요 배송 문의드려요"):
@@ -75,6 +76,7 @@ def test_build_app_reads_keys_from_the_environment(monkeypatch):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("claude_api_key", CLAUDE_KEY)
     monkeypatch.setenv("bot_auth_token", ACTION_TOKEN)
+    monkeypatch.setenv("kakao_bot_token", BOT_TOKEN)
     with TestClient(build_app(claude=FakeClaude())) as client:
         assert client.get("/health").status_code == 200
 

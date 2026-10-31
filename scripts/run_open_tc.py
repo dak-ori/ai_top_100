@@ -202,7 +202,7 @@ async def run_live(
     claude: Any | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> list[CaseResult]:
-    settings.validate()
+    settings.validate(webhook=False)
     owned_claude = claude is None
     client = AsyncAnthropic(api_key=settings.claude_api_key) if owned_claude else claude
     try:
