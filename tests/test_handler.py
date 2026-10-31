@@ -9,7 +9,7 @@ import app.handler as handler_module
 from app.agent import TIMEOUT_REPLY
 from app.config import Settings
 from app.handler import TurnHandler
-from app.kakao import CALLBACK_WAIT_TEXT, SkillRequest
+from app.kakao import BOT_CALLBACK_URL, CALLBACK_WAIT_TEXT, SkillRequest
 from app.server import HANDLER_FAILURE_TEXT, create_app
 from app.session import SessionStore
 
@@ -95,6 +95,21 @@ async def test_callback_request_returns_empty_text_and_posts_the_answer_later():
     body = json.loads(post.content)
     assert body["version"] == "2.0"
     assert body["template"]["outputs"][0]["simpleText"]["text"] == "답변: 문의"
+
+
+async def test_bot_webhook_request_answers_through_the_bot_callback_api():
+    handler, _, _, posts = build(kakao_bot_token="bot-token")
+    bot_request = SkillRequest("문의", "buk_1", None, [], bot_callback_token="cb_1")
+    result = await handler(bot_request)
+    assert result.text == "" and result.callback is not None
+    assert posts == []
+    await result.callback()
+    (post,) = posts
+    assert str(post.url) == BOT_CALLBACK_URL
+    assert post.headers["Authorization"] == "KakaoAK bot-token"
+    assert post.headers["X-Bot-Callback-Token"] == "cb_1"
+    body = json.loads(post.content)
+    assert body["skillResponse"]["template"]["outputs"][0]["simpleText"]["text"] == "답변: 문의"
 
 
 async def test_callback_failure_sends_safe_text_without_details():

@@ -140,3 +140,49 @@ def test_callback_exception_is_logged_and_server_keeps_serving(caplog: pytest.Lo
     assert health.json() == {"status": "ok"}
     assert caplog.text.count("Kakao callback task failed") == 2
     assert "callback exploded" in caplog.text
+
+
+WEBHOOK_BODY = {
+    "op": 0,
+    "t": "MESSAGE_CREATE",
+    "d": {
+        "id": 558185822630215770,
+        "content": "배송 언제 와요?",
+        "isChannelChatroom": False,
+        "botGroupKey": "bgk_xxx",
+        "botUserKey": "buk_xxx",
+        "timestamp": "2026-06-09T12:34:56.789Z",
+        "callbackToken": "cb_token_xxx",
+    },
+}
+
+
+def test_webhook_message_is_acknowledged_with_204_and_answered_in_background() -> None:
+    ran: list[str] = []
+
+    async def callback() -> None:
+        ran.append("sent")
+
+    handler = RecordingHandler(HandlerResult(text="", callback=callback))
+    with serve(handler) as client:
+        response = client.post("/webhook", json=WEBHOOK_BODY)
+
+    assert response.status_code == 204 and response.content == b""
+    (request,) = handler.requests
+    assert request.utterance == "배송 언제 와요?"
+    assert request.user_id == "buk_xxx"
+    assert request.bot_callback_token == "cb_token_xxx"
+    assert ran == ["sent"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{"op": 0, "t": "LEAVE", "d": {"botUserKey": "buk_xxx"}}, {"op": 0, "t": "MESSAGE_CREATE"}, ["not", "a", "dict"]],
+)
+def test_webhook_other_events_and_bad_frames_are_acknowledged_without_a_turn(
+    body: object, handler: RecordingHandler, client: TestClient
+) -> None:
+    response = client.post("/webhook", json=body)
+
+    assert response.status_code == 204
+    assert handler.requests == []

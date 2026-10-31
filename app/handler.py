@@ -9,7 +9,7 @@ import httpx
 
 from app.agent import TIMEOUT_REPLY, Agent
 from app.config import Settings
-from app.kakao import CallbackError, SkillRequest, post_callback
+from app.kakao import CallbackError, SkillRequest, post_bot_callback, post_callback
 from app.server import HANDLER_FAILURE_TEXT
 from app.session import SessionStore
 from app.types import HandlerResult
@@ -28,6 +28,8 @@ class TurnHandler:
         self._http = http_client
 
     async def __call__(self, request: SkillRequest) -> HandlerResult:
+        if request.bot_callback_token is not None:
+            return HandlerResult(text="", callback=lambda: self._answer_by_bot_callback(request))
         if request.callback_url is None:
             return HandlerResult(text=await self._answer(request, self._settings.TURN_BUDGET_SECONDS))
         return HandlerResult(text="", callback=lambda: self._answer_by_callback(request, request.callback_url))
@@ -39,6 +41,13 @@ class TurnHandler:
         except CallbackError as exc:
             # The server has already answered Kakao; there is no customer-facing channel left.
             logger.error("Could not deliver the callback answer: %s", exc)
+
+    async def _answer_by_bot_callback(self, request: SkillRequest) -> None:
+        reply = await self._answer(request, CALLBACK_BUDGET_SECONDS)
+        try:
+            await post_bot_callback(self._http, self._settings.kakao_bot_token, request.bot_callback_token, reply)
+        except CallbackError as exc:
+            logger.error("Could not deliver the bot callback answer: %s", exc)
 
     async def _answer(self, request: SkillRequest, budget: float) -> str:
         """The reply text for one request. Never raises: failures become customer-safe text and

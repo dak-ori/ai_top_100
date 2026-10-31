@@ -15,8 +15,9 @@ DEFAULT_DOTENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 # Lookup order within one source: the canonical lowercase name first, then its aliases.
 CLAUDE_API_KEY_NAMES = ("claude_api_key", "CLAUDE_API_KEY", "ANTHROPIC_API_KEY")
 BOT_AUTH_TOKEN_NAMES = ("bot_auth_token", "BOT_AUTH_TOKEN")
+KAKAO_BOT_TOKEN_NAMES = ("kakao_bot_token", "KAKAO_BOT_TOKEN")
 
-_SECRET_FIELDS = frozenset({"claude_api_key", "bot_auth_token"})
+_SECRET_FIELDS = frozenset({"claude_api_key", "bot_auth_token", "kakao_bot_token"})
 _MASK = "***"
 
 
@@ -29,6 +30,8 @@ class Settings:
     # Field names mirror the environment variable names the rest of the service refers to.
     claude_api_key: str | None = None
     bot_auth_token: str | None = None
+    # KakaoTalk bot auth token for the bot callback API; distinct from the action API token.
+    kakao_bot_token: str | None = None
     CLAUDE_MODEL: str = "claude-haiku-5-5"
     ACTION_API_BASE_URL: str = "https://gyodong-mall-action.aitop100.org"
     TURN_BUDGET_SECONDS: float = 4.2
@@ -63,6 +66,7 @@ class Settings:
         return cls(
             claude_api_key=lookup(*CLAUDE_API_KEY_NAMES),
             bot_auth_token=lookup(*BOT_AUTH_TOKEN_NAMES),
+            kakao_bot_token=lookup(*KAKAO_BOT_TOKEN_NAMES),
             CLAUDE_MODEL=lookup("CLAUDE_MODEL") or defaults.CLAUDE_MODEL,
             ACTION_API_BASE_URL=lookup("ACTION_API_BASE_URL") or defaults.ACTION_API_BASE_URL,
             TURN_BUDGET_SECONDS=_positive(
@@ -76,16 +80,13 @@ class Settings:
             ),
         )
 
-    def validate(self) -> None:
-        """Raise ``ConfigError`` naming every required variable that is unset."""
-        missing = [
-            _describe(names)
-            for names, value in (
-                (CLAUDE_API_KEY_NAMES, self.claude_api_key),
-                (BOT_AUTH_TOKEN_NAMES, self.bot_auth_token),
-            )
-            if not value
-        ]
+    def validate(self, *, webhook: bool = True) -> None:
+        """Raise ``ConfigError`` naming every required variable that is unset. ``webhook=False``
+        is for tools that never answer Kakao and so need no bot token."""
+        required = [(CLAUDE_API_KEY_NAMES, self.claude_api_key), (BOT_AUTH_TOKEN_NAMES, self.bot_auth_token)]
+        if webhook:
+            required.append((KAKAO_BOT_TOKEN_NAMES, self.kakao_bot_token))
+        missing = [_describe(names) for names, value in required if not value]
         if missing:
             raise ConfigError("Missing required environment variable(s): " + "; ".join(missing))
 

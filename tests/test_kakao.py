@@ -9,6 +9,7 @@ from app.kakao import (
     BadSkillResponse,
     CallbackError,
     callback_wait_response,
+    parse_bot_event,
     parse_skill_request,
     post_callback,
     simple_text_response,
@@ -216,3 +217,24 @@ async def test_post_callback_rejects_non_https_without_sending(url: str) -> None
             await post_callback(client, url, "답변")
 
     assert sent == []
+
+
+def test_bot_message_event_collects_media_and_requires_callback_token() -> None:
+    event = parse_bot_event(
+        {
+            "op": 0,
+            "t": "MESSAGE_CREATE",
+            "d": {
+                "content": "사진 보냅니다",
+                "botUserKey": "buk_1",
+                "callbackToken": "cb_1",
+                "attachments": [{"url": "https://cdn.example/mold.jpg"}],
+            },
+        }
+    )
+    assert event is not None
+    assert (event.utterance, event.user_id, event.bot_callback_token) == ("사진 보냅니다", "buk_1", "cb_1")
+    assert event.media_urls == [("image", "https://cdn.example/mold.jpg")]
+
+    with pytest.raises(BadSkillRequest, match="callbackToken"):
+        parse_bot_event({"op": 0, "t": "MESSAGE_CREATE", "d": {"content": "hi", "botUserKey": "buk_1"}})

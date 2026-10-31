@@ -6,10 +6,16 @@ import logging
 from collections.abc import Awaitable, Callable
 
 import httpx
-from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Request, Response
 
 from app.config import Settings
-from app.kakao import BadSkillRequest, callback_wait_response, parse_skill_request, simple_text_response
+from app.kakao import (
+    BadSkillRequest,
+    callback_wait_response,
+    parse_bot_event,
+    parse_skill_request,
+    simple_text_response,
+)
 from app.types import SkillHandler
 
 logger = logging.getLogger(__name__)
@@ -26,7 +32,7 @@ def create_app(
 ) -> FastAPI:
     """Build the skill server. ``settings`` and ``http_client`` are exposed on ``app.state``;
     their lifecycle stays with the caller."""
-    # Only /health and /skill are public; the generated API docs are not.
+    # Only /health, /skill and /webhook are public; the generated API docs are not.
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.state.http_client = http_client
@@ -53,6 +59,30 @@ def create_app(
         except Exception:
             logger.exception("Skill handler failed")
             return simple_text_response(HANDLER_FAILURE_TEXT)
+
+    @app.post("/webhook", status_code=204)
+    async def webhook(request: Request, background_tasks: BackgroundTasks) -> Response:
+        """KakaoTalk bot webhook: acknowledge with 204 at once (Kakao requires 2xx within one
+        second); the answer goes out afterwards through the bot callback API."""
+        acknowledged = Response(status_code=204)
+        try:
+            event = parse_bot_event(await request.json())
+        except (ValueError, BadSkillRequest) as exc:
+            logger.warning("Rejected Kakao bot webhook: %s", exc)
+            return acknowledged
+        if event is None:
+            return acknowledged
+
+        try:
+            result = await handler(event)
+        except Exception:
+            logger.exception("Webhook handler failed")
+            return acknowledged
+        if result.callback is None:
+            logger.error("Webhook handler returned no callback; the message gets no answer")
+        else:
+            background_tasks.add_task(_run_callback, result.callback)
+        return acknowledged
 
     return app
 

@@ -21,10 +21,12 @@ python -m pip install -r requirements.txt
 ```
 claude_api_key=
 bot_auth_token=
+kakao_bot_token=
 ```
 
 - `claude_api_key`: Anthropic API 키. 별칭 `CLAUDE_API_KEY`, `ANTHROPIC_API_KEY`도 읽는다.
-- `bot_auth_token`: 액션 API Bearer 토큰. 별칭 `BOT_AUTH_TOKEN`도 읽는다.
+- `bot_auth_token`: 액션 API Bearer 토큰(`aitop100_`로 시작). 별칭 `BOT_AUTH_TOKEN`도 읽는다.
+- `kakao_bot_token`: 카카오톡 봇 인증 토큰. 메시지 콜백 API(`Authorization: KakaoAK <토큰>`)에 쓴다. 별칭 `KAKAO_BOT_TOKEN`. 서버 기동에만 필요하고 `run_open_tc.py`는 요구하지 않는다.
 - 선택: `CLAUDE_MODEL`(기본 `claude-haiku-5-5`), `TURN_BUDGET_SECONDS`(기본 `4.2`), `SESSION_TTL_SECONDS`, `MAX_SESSION_TURNS`, `ACTION_API_BASE_URL`.
 - 환경변수가 `.env`보다 우선한다. 키가 없으면 서버가 기동하지 않고 오류에 변수 **이름**만 나온다(값은 출력하지 않는다).
 
@@ -80,6 +82,14 @@ python scripts/smoke_skill.py https://<서비스>.onrender.com
 `/health` 상태 코드와, `/skill`에 카카오 형식 페이로드("안녕하세요 배송 문의드려요")를 보냈을 때의 상태 코드, 응답 형식(SimpleText 1개, 500자 이하), 소요 시간을 출력한다. 하나라도 어긋나거나 5초를 넘으면 종료 코드 1이다. 이 호출은 실제 Claude 턴 1회(약 1센트)를 쓴다.
 
 `autoDeploy: true`이므로 연결한 브랜치에 푸시하면 다시 배포된다. 심사 기간(제출 후)에는 수정·재배포하지 않는다.
+
+## 카카오톡 봇 웹훅 연결
+
+앱 관리 페이지 [카카오톡 봇] > [봇] > [웹훅]에 `https://<서비스>.onrender.com/webhook`을 등록한다(메서드 POST, 커스텀 헤더 없음).
+
+- 서버는 웹훅을 받으면 즉시 204로 수신을 확인하고, `MESSAGE_CREATE`의 답은 백그라운드에서 만들어 `https://kapi.kakao.com/v1/bot/callback`으로 보낸다(콜백 토큰 만료 5분, 답변 예산 50초).
+- 다른 이벤트(`LEAVE` 등)는 수신 확인만 한다. 형식이 틀린 요청도 204로 확인하고 사유를 로그에 남긴다.
+- Render에 `kakao_bot_token`을 입력해야 서버가 기동한다.
 
 ## 카카오 오픈빌더 연결
 

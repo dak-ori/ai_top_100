@@ -16,6 +16,8 @@ services:
         sync: false # entered in the Render dashboard, never committed
       - key: bot_auth_token
         sync: false # entered in the Render dashboard, never committed
+      - key: kakao_bot_token
+        sync: false # KakaoTalk bot auth token for the bot callback API; entered in the dashboard
       - key: CLAUDE_MODEL
         value: claude-haiku-5-5
       - key: TURN_BUDGET_SECONDS

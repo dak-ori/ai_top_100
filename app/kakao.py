@@ -1,4 +1,4 @@
-"""Kakao i Open Builder skill payload parsing and SimpleText responses."""
+"""Kakao payload parsing and SimpleText responses: Open Builder skills and KakaoTalk bot webhooks."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ import httpx
 
 MAX_SIMPLE_TEXT_LENGTH = 500
 CALLBACK_WAIT_TEXT = "확인하고 있어요. 잠시만 기다려 주세요."
+BOT_CALLBACK_URL = "https://kapi.kakao.com/v1/bot/callback"
+MESSAGE_CREATE_EVENT = "MESSAGE_CREATE"
 
 _ELLIPSIS = "..."
 # "다." ends in "." so it is covered by the "." boundary.
@@ -41,6 +43,42 @@ class SkillRequest:
     user_id: str
     callback_url: str | None
     media_urls: list[tuple[str, str]]
+    # Set for KakaoTalk bot webhook messages: the answer goes to the bot callback API.
+    bot_callback_token: str | None = None
+
+
+def parse_bot_event(body: object) -> SkillRequest | None:
+    """Parse a KakaoTalk bot webhook DISPATCH frame. Events other than MESSAGE_CREATE only need
+    an acknowledgement, so they return None."""
+    if not isinstance(body, dict):
+        raise BadSkillRequest("request body must be a JSON object")
+    if body.get("t") != MESSAGE_CREATE_EVENT:
+        return None
+    data = body.get("d")
+    if not isinstance(data, dict):
+        raise BadSkillRequest("d is missing")
+
+    content = data.get("content")
+    if content is None:
+        content = ""
+    if not isinstance(content, str):
+        raise BadSkillRequest("d.content must be a string")
+
+    user_key = data.get("botUserKey")
+    if not isinstance(user_key, str) or not user_key:
+        raise BadSkillRequest("d.botUserKey is missing")
+
+    callback_token = data.get("callbackToken")
+    if not isinstance(callback_token, str) or not callback_token:
+        raise BadSkillRequest("d.callbackToken is missing")
+
+    return SkillRequest(
+        utterance=content,
+        user_id=user_key,
+        callback_url=None,
+        media_urls=_collect_media_urls([content, data]),
+        bot_callback_token=callback_token,
+    )
 
 
 def parse_skill_request(body: object) -> SkillRequest:
@@ -102,6 +140,17 @@ async def post_callback(client: httpx.AsyncClient, callback_url: str, text: str)
         raise CallbackError(f"Kakao callback request failed: {type(exc).__name__}") from exc
     if not response.is_success:
         raise CallbackError(f"Kakao callback returned HTTP {response.status_code}")
+
+
+async def post_bot_callback(client: httpx.AsyncClient, bot_token: str, callback_token: str, text: str) -> None:
+    payload = {"skillResponse": simple_text_response(text)}
+    headers = {"Authorization": f"KakaoAK {bot_token}", "X-Bot-Callback-Token": callback_token}
+    try:
+        response = await client.post(BOT_CALLBACK_URL, json=payload, headers=headers)
+    except httpx.HTTPError as exc:
+        raise CallbackError(f"Kakao bot callback request failed: {type(exc).__name__}") from exc
+    if not response.is_success:
+        raise CallbackError(f"Kakao bot callback returned HTTP {response.status_code}")
 
 
 def _fit_simple_text(text: str) -> str:
