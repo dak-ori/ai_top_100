@@ -103,7 +103,7 @@ async def test_simple_text_reply_and_request_shape(world):
     assert await agent.run_turn(session, "안녕하세요", []) == "안녕하세요, 무엇을 도와드릴까요?"
     (call,) = model.calls
     assert call["model"] == "claude-haiku-5-5"
-    assert call["max_tokens"] == 700
+    assert call["max_tokens"] == 4000
     assert call["output_config"] == {"effort": "low"}
     assert call["messages"] == [{"role": "user", "content": [{"type": "text", "text": "안녕하세요"}]}]
     assert [tool["name"] for tool in call["tools"]] == [tool.name for tool in TOOLS]

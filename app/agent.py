@@ -17,7 +17,8 @@ from app.session import Session
 
 logger = logging.getLogger(__name__)
 
-MAX_TOKENS = 700
+# Thinking shares this budget; the 500-character SimpleText cut bounds the reply itself.
+MAX_TOKENS = 4000
 MAX_ITERATIONS = 6
 MAX_IMAGES = 3
 
