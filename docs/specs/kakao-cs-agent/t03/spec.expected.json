@@ -1,0 +1,26 @@
+{
+  "verification_commands": [
+    {
+      "argv": ["python", "-m", "pip", "install", "-q", "-r", "requirements.txt"],
+      "timeout_sec": 600,
+      "contract_refs": ["R2"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_prompt.py"],
+      "timeout_sec": 120,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R1", "R2", "R3", "R4", "R5"]
+    },
+    {
+      "argv": ["python", "-c", "from app.prompt import build_system_blocks as b; x=b(); t=''.join(k['text'] for k in x); print(len(x), len(t)); raise SystemExit(0 if len(t)<=160000 and 'cache_control' in x[-1] else 1)"],
+      "contract_refs": ["R2", "R5"]
+    }
+  ],
+  "forbidden_patterns": [
+    {"pattern": "aitop100_[A-Za-z0-9]{6,}", "description": "액션 토큰이 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "sk-ant-[A-Za-z0-9_-]{10,}", "description": "Anthropic 키가 diff에 들어감", "severity": "disqualifier"}
+  ],
+  "required_files": ["app/prompt.py", "tests/test_prompt.py", "knowledge/handoff.md", "knowledge/chair.md", "knowledge/promo.md", "knowledge/driver.md", "knowledge/youth.md", "knowledge/fishing.md", "knowledge/evidence.md", "knowledge/revisions.md", "knowledge/misc.md", "knowledge/open_cases.md", "knowledge/sources/refund_policy.txt", "knowledge/sources/privacy_policy.txt", "knowledge/sources/membership_terms.txt"],
+  "forbidden_files": [".env", "api_key.md", "docs/competition/api.md", "knowledge/api.md"]
+}

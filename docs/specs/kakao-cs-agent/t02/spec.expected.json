@@ -1,0 +1,33 @@
+{
+  "verification_commands": [
+    {
+      "argv": ["python", "-m", "pip", "install", "-q", "-r", "requirements.txt"],
+      "timeout_sec": 600,
+      "contract_refs": ["R1"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_actions.py"],
+      "timeout_sec": 180,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R1", "R2", "R3", "R4", "R5"]
+    },
+    {
+      "argv": ["python", "-c", "import hashlib,sys; a=open('app/data/actions.json','rb').read(); b=open(r'C:\\github\\ai_top_100\\docs\\competition\\actions.json','rb').read(); print('SAME' if hashlib.sha256(a).hexdigest()==hashlib.sha256(b).hexdigest() else 'DIFF'); raise SystemExit(0 if a==b else 1)"],
+      "stdout_contains": ["SAME"],
+      "contract_refs": ["R1"]
+    },
+    {
+      "argv": ["python", "-c", "import json; from app.actions import build_tools; t=build_tools(json.load(open('app/data/actions.json',encoding='utf-8'))); names=[x.name for x in t]; print(len(names), 'api_41' in names); raise SystemExit(0 if len(names)==40 and 'api_41' not in names else 1)"],
+      "stdout_contains": ["40 False"],
+      "contract_refs": ["R2", "R3"]
+    }
+  ],
+  "forbidden_patterns": [
+    {"pattern": "aitop100_[A-Za-z0-9]{6,}", "description": "액션 토큰이 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "sk-ant-[A-Za-z0-9_-]{10,}", "description": "Anthropic 키가 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "action-data/reset", "description": "reset 엔드포인트는 복사한 명세 데이터 밖의 코드에서 호출·노출하지 않는다(금지 검사 문자열은 allow-list 파일에서만)", "files": ["app/actions.py"], "severity": "warning"}
+  ],
+  "required_files": ["app/actions.py", "app/data/actions.json", "tests/test_actions.py"],
+  "forbidden_files": [".env", "api_key.md", "docs/competition/api.md"]
+}

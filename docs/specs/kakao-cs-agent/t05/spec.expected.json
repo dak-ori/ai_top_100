@@ -1,0 +1,53 @@
+{
+  "verification_commands": [
+    {
+      "argv": ["python", "-m", "pip", "install", "-q", "-r", "requirements.txt"],
+      "timeout_sec": 600,
+      "contract_refs": ["R2"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q"],
+      "timeout_sec": 600,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R1", "R2", "R3", "R4"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_main.py"],
+      "timeout_sec": 180,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R1", "R2"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_scripts.py"],
+      "timeout_sec": 180,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R3", "R4"]
+    },
+    {
+      "argv": ["python", "scripts/run_open_tc.py", "--dry-run"],
+      "timeout_sec": 60,
+      "stdout_contains": ["L-03", "L-60", "R-05-a", "Y-07-b", "Y-24", "API-"],
+      "contract_refs": ["R3"]
+    },
+    {
+      "argv": ["python", "-c", "import yaml,re; d=yaml.safe_load(open('render.yaml',encoding='utf-8')); s=d['services'][0]; env={e['key']:e for e in s['envVars']}; txt=open('render.yaml',encoding='utf-8').read(); ok = s.get('plan')!='free' and s.get('healthCheckPath')=='/health' and 'workers 1' in s['startCommand'] and env['claude_api_key'].get('sync') is False and env['bot_auth_token'].get('sync') is False and not re.search(r'aitop100_[A-Za-z0-9]{6,}|sk-ant-',txt); print('RENDER_OK' if ok else 'RENDER_BAD'); raise SystemExit(0 if ok else 1)"],
+      "stdout_contains": ["RENDER_OK"],
+      "contract_refs": ["R2"]
+    },
+    {
+      "argv": ["python", "-c", "t=open('README.md',encoding='utf-8').read(); need=['Render','오픈빌더','콜백','smoke_skill','.env']; miss=[n for n in need if n not in t]; print('README_OK' if not miss else 'README_MISSING:'+','.join(miss)); raise SystemExit(1 if miss else 0)"],
+      "stdout_contains": ["README_OK"],
+      "contract_refs": ["R5"]
+    }
+  ],
+  "forbidden_patterns": [
+    {"pattern": "aitop100_[A-Za-z0-9]{6,}", "description": "액션 토큰이 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "sk-ant-[A-Za-z0-9_-]{10,}", "description": "Anthropic 키가 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "action-data/reset", "description": "reset 호출은 scripts/run_open_tc.py의 --reset-first 경로 한 곳에서만", "files": ["app/"], "severity": "disqualifier"}
+  ],
+  "required_files": ["app/main.py", "render.yaml", "scripts/run_open_tc.py", "scripts/smoke_skill.py", "README.md", "docs/debrief-draft.md", "tests/test_main.py", "tests/test_scripts.py"],
+  "forbidden_files": [".env", "api_key.md", "docs/competition/api.md"]
+}

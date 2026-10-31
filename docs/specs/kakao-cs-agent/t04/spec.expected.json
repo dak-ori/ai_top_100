@@ -1,0 +1,61 @@
+{
+  "verification_commands": [
+    {
+      "argv": ["python", "-m", "pip", "install", "-q", "-r", "requirements.txt"],
+      "timeout_sec": 600,
+      "contract_refs": ["R1"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_session.py"],
+      "timeout_sec": 120,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R1"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_guard.py"],
+      "timeout_sec": 120,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R2"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_media.py"],
+      "timeout_sec": 120,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R3"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_agent.py"],
+      "timeout_sec": 180,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R4", "R6", "R7"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_handler.py"],
+      "timeout_sec": 180,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R5", "R7"]
+    },
+    {
+      "argv": ["python", "-m", "pytest", "-q"],
+      "timeout_sec": 600,
+      "stdout_contains": ["passed"],
+      "stdout_not_contains": ["failed", "error"],
+      "contract_refs": ["R7"]
+    }
+  ],
+  "forbidden_patterns": [
+    {"pattern": "aitop100_[A-Za-z0-9]{6,}", "description": "액션 토큰이 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "sk-ant-[A-Za-z0-9_-]{10,}", "description": "Anthropic 키가 diff에 들어감", "severity": "disqualifier"},
+    {"pattern": "tool_choice\\s*=|\"tool_choice\"", "description": "강제 tool_choice 사용 금지(Haiku 5.5 규칙)", "files": ["app/agent.py"], "severity": "disqualifier"},
+    {"pattern": "(?i)\\bthinking\\s*=|\"thinking\"\\s*:", "description": "thinking 파라미터 전송 금지", "files": ["app/agent.py"], "severity": "disqualifier"},
+    {"pattern": "except\\s*(Exception)?\\s*:\\s*(pass|\\.\\.\\.)\\s*$", "description": "침묵하는 예외 처리", "severity": "disqualifier"},
+    {"pattern": "(?i)import\\s+openai|from\\s+openai", "description": "OpenAI SDK 사용 금지", "severity": "disqualifier"}
+  ],
+  "required_files": ["app/session.py", "app/guard.py", "app/media.py", "app/agent.py", "app/handler.py", "tests/test_session.py", "tests/test_guard.py", "tests/test_media.py", "tests/test_agent.py", "tests/test_handler.py"],
+  "forbidden_files": [".env", "api_key.md", "docs/competition/api.md"]
+}
