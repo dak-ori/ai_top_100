@@ -3,3 +3,7 @@
 docs/competition/api.md
 .env
 api_key.md
+.env.*
+.venv/
+__pycache__/
+.pytest_cache/
