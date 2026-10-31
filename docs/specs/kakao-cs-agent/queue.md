@@ -6,4 +6,4 @@
 
 - [x] kakao-cs-agent.t04 [Agent loop, session, media and output guard](docs/specs/kakao-cs-agent/t04/spec.md)
 
-- [ ] kakao-cs-agent.t05 [Assembly, Render deploy and open-TC replay](docs/specs/kakao-cs-agent/t05/spec.md)
+- [x] kakao-cs-agent.t05 [Assembly, Render deploy and open-TC replay](docs/specs/kakao-cs-agent/t05/spec.md)
