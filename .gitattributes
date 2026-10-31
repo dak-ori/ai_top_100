@@ -1,0 +1,2 @@
+# The action API spec is a verbatim copy; keep its bytes (LF endings) on every checkout.
+app/data/actions.json -text
