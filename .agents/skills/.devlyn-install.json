@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "package": "devlyn-cli",
+  "version": "4.3.20",
+  "skills": {
+    "devlyn-ideate": "6b3143bcfe9c60a76f142d533177d85d36f856a163a226351317ed688738c05a",
+    "devlyn-engines": "89f0efaa2efdfddc887b494138247980d97856f6cabe6a8dcc585b3a28e5fa88",
+    "_shared": "3ffbcb95d487c8847f0fc70524656280c416abcf85a227b1f59602c21807a2fd",
+    "prompt-engineering": "d7a0718ab0fd7e0a3c0d8ef8bc4e0349edfc843648343f08f9776e1ea047573c",
+    "pyx-scan": "60f02fa049616e94fff4318c96dc9f417b3def7ec75a3bd0846f2bcbd99b0b69"
+  }
+}
